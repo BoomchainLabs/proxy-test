@@ -1,38 +1,42 @@
-import { type User, type InsertUser } from "@shared/schema";
-import { randomUUID } from "crypto";
 
-// modify the interface with any CRUD methods
-// you might need
+import { proxyRoutes, type InsertProxyRoute, type ProxyRoute } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  getProxyRoutes(): Promise<ProxyRoute[]>;
+  getProxyRoute(id: number): Promise<ProxyRoute | undefined>;
+  createProxyRoute(route: InsertProxyRoute): Promise<ProxyRoute>;
+  deleteProxyRoute(id: number): Promise<void>;
+  toggleProxyRoute(id: number, enabled: boolean): Promise<ProxyRoute>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-
-  constructor() {
-    this.users = new Map();
+export class DatabaseStorage implements IStorage {
+  async getProxyRoutes(): Promise<ProxyRoute[]> {
+    return await db.select().from(proxyRoutes);
   }
 
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+  async getProxyRoute(id: number): Promise<ProxyRoute | undefined> {
+    const [route] = await db.select().from(proxyRoutes).where(eq(proxyRoutes.id, id));
+    return route;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+  async createProxyRoute(insertRoute: InsertProxyRoute): Promise<ProxyRoute> {
+    const [route] = await db.insert(proxyRoutes).values(insertRoute).returning();
+    return route;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+  async deleteProxyRoute(id: number): Promise<void> {
+    await db.delete(proxyRoutes).where(eq(proxyRoutes.id, id));
+  }
+
+  async toggleProxyRoute(id: number, enabled: boolean): Promise<ProxyRoute> {
+    const [route] = await db.update(proxyRoutes)
+      .set({ enabled })
+      .where(eq(proxyRoutes.id, id))
+      .returning();
+    return route;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

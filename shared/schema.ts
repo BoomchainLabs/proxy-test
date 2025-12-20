@@ -1,18 +1,22 @@
-import { sql } from "drizzle-orm";
-import { pgTable, text, varchar } from "drizzle-orm/pg-core";
+
+import { pgTable, text, serial, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+export const proxyRoutes = pgTable("proxy_routes", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  pathPrefix: text("path_prefix").notNull().unique(),
+  targetUrl: text("target_url").notNull(),
+  enabled: boolean("enabled").default(true).notNull(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+export const insertProxyRouteSchema = createInsertSchema(proxyRoutes).pick({
+  name: true,
+  pathPrefix: true,
+  targetUrl: true,
+  enabled: true,
 });
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
+export type InsertProxyRoute = z.infer<typeof insertProxyRouteSchema>;
+export type ProxyRoute = typeof proxyRoutes.$inferSelect;
