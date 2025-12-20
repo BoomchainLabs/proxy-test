@@ -45,18 +45,6 @@ export async function registerRoutes(
     res.json(route);
   });
 
-  // --- Seed Data ---
-  const existingRoutes = await storage.getProxyRoutes();
-  if (existingRoutes.length === 0) {
-    await storage.createProxyRoute({
-      name: "Example: JSON Placeholder",
-      pathPrefix: "/json-api",
-      targetUrl: "https://jsonplaceholder.typicode.com",
-      enabled: true
-    });
-    console.log("Seeded database with example proxy route");
-  }
-
   // --- Proxy Logic ---
   const proxy = createProxyServer({
     secure: false, // allow self-signed certs if needed
